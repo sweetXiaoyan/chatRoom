@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>聊天室</title>
+
+    <style>
+        html ,body {
+            margin: 0;
+            padding: 0;
+        }
+        .chatRoom {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 10px 0 10px;
+        }
+        .chatRoom .topNav{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #ff7a47;
+            text-align: center;
+        }
+        .chatRoom h1 {
+            display: inline-block;
+            font-size: 20px;
+            line-height: 42px;
+            margin: 4px 10px;
+
+        }
+        .welcome{
+            font-size: 14px;
+            color: #f6f6f6;
+            font-weight: normal;
+        }
+        .count-person{
+            margin-left: 6px;
+        }
+        #chatList ul {
+            list-style: none;
+            margin-top: 40px;
+            margin-bottom: 40px;
+            padding: 0;
+            overflow: auto;
+            height: 500px;
+        }
+        #chatList ul li{
+            padding: 6px 0;
+
+        }
+        #chatList ul li.fr {
+            text-align: right;
+        }
+        #chatList ul li.fr .icon{
+            margin-left: 8px;
+        }
+        #chatList ul li .icon{
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid orange;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        #chatList ul li .msg-content{
+            display: inline-block;
+            vertical-align: middle;
+            box-sizing: border-box;
+
+        }
+        #chatList ul li .msg-content span{
+            display: inline-block;
+            color: #c1c1c1;
+            line-height: 22px;
+            margin-bottom: 10px;
+
+        }
+        #chatList ul li .msg-content p{
+            background-color: #e7e7e7;
+            line-height: 26px;
+            padding: 4px 14px;
+            border-radius: 8px;
+            color: #c93100;
+            margin: 0;
+        }
+        .sendContent{
+            margin-top: 10px;
+            width: 100%;
+            position: fixed;
+            bottom: 1px;
+        }
+        #content {
+            width: 80%;
+            display: inline-block;
+            padding: 0;
+            line-height: 34px;
+            border-radius: 2px;
+            border: 1px solid orange;
+            text-indent: 8px;
+            vertical-align: middle;
+        }
+        #send {
+            display: inline-block;
+            width: 13%;
+            height: 34px;
+            line-height: 34px;
+            background-color: orangered;
+            outline: none;
+            border: 1px solid orange;
+            color: #e7e7e7;
+            font-size: 14px;
+            border-radius: 2px;
+            vertical-align: middle;
+        }
+        .elseItem{
+            margin-top: 10px;
+            text-align: right;
+            margin-right: 20%;
+        }
+        .elseItem  input{
+            box-sizing: border-box;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .elseItem > input:hover , .elseItem input#sendImgBtn:hover{
+            border: 1px solid #c93100;
+        }
+        #sendImgBtn{
+            background: url("/images/img_icon.jpg") no-repeat center center;
+            background-size: cover;
+
+        }
+        #sendFace{
+            background: url("/images/face_icon.png") no-repeat center center;
+            background-size: cover;
+
+        }
+        .msg-content img {
+            width: 50px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="chatRoom">
+    <div class="topNav">
+        <h1>小小聊天室</h1>
+        <span class="welcome">欢迎您：
+            <span id="user"><%= userName%></span>
+        </span>
+        <span class="count-person">在线人数：<%= count %></span>
+    </div>
+
+    <div id="chatList">
+        <ul>
+        </ul>
+    </div>
+    <div class="sendContent">
+        <input type="text" id="content">
+        <input type="button" value="发 送" id="send">
+        <div class="elseItem">
+            <label for="sendImg" class="imageLabel">
+                <input type="button" id="sendImgBtn"/>
+                <input id="sendImg" type="file"  style="display: none" />
+            </label>
+            <input id="sendFace" type="button"/>
+        </div>
+    </div>
+</div>
+
+</body>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="/jquery-3.2.1.min.js"></script>
+<script type="text/javascript">
+    var socket = io();
+
+    $('#send').click(function () {
+        var content = $('#content');
+        if (!content.val()){
+            alert("请输入内容！");
+            return
+        }
+        // 将文本框的内容发送
+        socket.emit('chitchat',{
+            "content": content.val(),
+            "username": $('#user')[0].innerText
+        })
+        _dispalyMsg( 'self',$('#chatList > ul'),{'user':$('#user')[0].innerText, 'content': content.val() })
+        $('#content').val("");
+    })
+
+    // 接受别人聊天内容
+    socket.on('chitchat', function (msg) {
+        if(msg){
+            _dispalyMsg( 'others',$('#chatList > ul'),{'user':msg.username, 'content': msg.content })
+            $('#content').val("");
+        }
+    })
+
+    $('#sendImgBtn').click(function () {
+        $('#sendImg').click()
+        // 先解绑之前绑定的 change 事件
+        $('#sendImg').unbind('change');
+        $('#sendImg').change(function (e) {
+            var file = e.target.files[0];
+            var render = new FileReader();
+            if(!render) {
+                console.log("你的浏览器不支持，这是html5 的属性");
+            }
+            render.onload = function (e) {
+                socket.emit('chatImg',{
+                    'username': $('#user')[0].innerText,
+                    'imgUrl': e.target.result
+                });
+                _displayImage('self', $('#chatList > ul'), {
+                    'username': $('#user')[0].innerText,
+                    'imgUrl': e.target.result
+                } )
+            }
+            render.readAsDataURL(file);
+        })
+    })
+    // 接收别人发的图片
+    socket.on('chatImg', function (msg) {
+        if (msg){
+            _displayImage('others', $('#chatList > ul'), msg)
+
+        }
+    })
+
+    // 展示消息
+    function _dispalyMsg(role, $dom, val) {
+        if(role ==='self'){
+            $dom.append('<li class="fr">' +
+                '<div class="msg-content">' +
+                '<span>'+ val.user +'</span>'+
+                '<p>'+ val.content +'</p>' +
+                '</div>' +
+                '<span class="icon" ></span></li>');
+            $dom.animate({scrollTop: $dom.height()}, 500);
+        }else {
+            $dom.append('<li><span class="icon" ></span>' +
+                '<div class="msg-content">' +
+                '<span>'+ val.user +'</span>'+
+                '<p>'+ val.content +'</p>' +
+                '</div></li>');
+            $dom.animate({scrollTop: $dom.height()}, 500);
+        }
+
+    }
+    // 展示图片
+    function _displayImage(role,$dom, val) {
+        if (role ==='self') {
+            $dom.append('<li class="fr">' +
+                '<div class="msg-content">' +
+                '<span>'+ val.username +'</span>' +
+                '<img src='+ val.imgUrl +' alt="">' +
+                '</div>' +
+                '<span class="icon" ></span>' +
+                '</li>')
+        }else {
+            $dom.append('<li>' +
+                '<span class="icon" ></span>' +
+                '<div class="msg-content">' +
+                '<span>'+ val.username +'</span>' +
+                '<img src='+ val.imgUrl +' alt="">' +
+                '</div>' +
+                '</li>');
+            $dom.animate({scrollTop: $dom.height()}, 500);
+        }
+    }
+</script>
+</html>
+
+
+
+
+
+
+
+
