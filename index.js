@@ -63,5 +63,6 @@ io.on('connection', function (socket) {
 
 
 // 监听
+// http.listen(3009);  // localhost
 http.listen(3009,'172.16.10.202');
 
